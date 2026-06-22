@@ -13,10 +13,10 @@
   "author": "Mike Bell <mbell8903@yahoo.com>",
   "repository": {
     "type": "git",
-    "url": "git://github.com/mbell8903/passport-auth-token.git"
+    "url": "git+https://github.com/mbell8903/passport-auth-token.git"
   },
   "bugs": {
-    "url": "http://github.com/mbell8903/passport-auth-token/issues"
+    "url": "https://github.com/mbell8903/passport-auth-token/issues"
   },
   "licenses": [
     {
