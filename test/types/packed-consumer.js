@@ -18,9 +18,20 @@ try {
 	))[0];
 	const packedPaths = packResult.files.map(function (file) {
 		return file.path;
-	});
+	}).sort();
 
-	assert.ok(packedPaths.includes('lib/index.d.ts'));
+	// Keep the public package boundary intentional and prevent accidental files
+	// from being included in future releases.
+	assert.deepEqual(packedPaths, [
+		'CHANGELOG.md',
+		'LICENSE',
+		'README.md',
+		'lib/index.d.ts',
+		'lib/index.js',
+		'lib/strategy.js',
+		'lib/utils.js',
+		'package.json'
+	]);
 
 	const tarballPath = path.join(tempRoot, packResult.filename),
 		consumerPath = path.join(tempRoot, 'consumer.ts');
