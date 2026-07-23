@@ -170,7 +170,7 @@ describe('Strategy token lookup', function () {
 		expect(outcome.user.token).to.equal('params-token');
 	});
 
-	it('keeps the UV passReqToCallback contract unchanged', async function () {
+	it('keeps the passReqToCallback contract unchanged for existing consumers', async function () {
 		let suppliedRequest;
 		const strategy = new Strategy({
 			headerFields: ['x-token', 'X-Token', 'authorization', 'Authorization'],
@@ -181,7 +181,7 @@ describe('Strategy token lookup', function () {
 			done(null, { token: token });
 		});
 		const request = {
-			headers: { authorization: 'uv-token' },
+			headers: { authorization: 'header-token' },
 			body: {},
 			query: {}
 		};
@@ -189,7 +189,7 @@ describe('Strategy token lookup', function () {
 		const outcome = await authenticate(strategy, request);
 
 		expect(outcome.type).to.equal('success');
-		expect(outcome.user.token).to.equal('uv-token');
+		expect(outcome.user.token).to.equal('header-token');
 		expect(suppliedRequest.headers).to.equal(request.headers);
 	});
 
