@@ -63,6 +63,14 @@ jobs:
         if: matrix.node-version == '24'
         run: npm run coverage:check
 
+      - name: Validate TypeScript declarations
+        if: matrix.node-version == '24'
+        run: npm run typecheck
+
+      - name: Validate packed TypeScript consumer
+        if: matrix.node-version == '24'
+        run: npm run typecheck:pack
+
   stage:
     needs: test
     if: >-

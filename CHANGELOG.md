@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.3 - 2026-07-23
+
+### Added
+
+- TypeScript declarations for CommonJS, default, and named strategy imports.
+- Local and isolated packed-consumer TypeScript validation.
+- Safe publication defaults that target npmjs.org under the `next`
+  distribution tag.
+
+### Changed
+
+- Refined package discovery metadata and linked the homepage directly to the
+  repository README.
+- Enforced the expected npm tarball contents during packed-consumer validation.
+
+### Removed
+
+- Obsolete Makefile fragments for the former Mocha, Istanbul, JSHint, and
+  Coveralls development toolchain.
+
 ## 2.0.2 - 2026-07-23
 
 ### Added

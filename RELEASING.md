@@ -27,6 +27,8 @@ reviewed before it becomes the default installation.
    ```sh
    npm ci
    npm test
+   npm run typecheck
+   npm run typecheck:pack
    npm run coverage:check
    npm pack --dry-run
    ```

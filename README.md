@@ -117,11 +117,16 @@ The first token found is used.
 ```shell
 npm install
 npm test
+npm run typecheck
+npm run typecheck:pack
 npm run coverage
 ```
 
 Continuous integration runs on Node.js 18, 20, 22, and 24. Node.js 24 also
-enforces 100% line and function coverage and 90% branch coverage.
+enforces 100% line and function coverage, 90% branch coverage, and validates
+the TypeScript declarations from both the repository and a packed consumer.
+The packed-consumer check also enforces the expected npm package contents so
+unintended files cannot silently enter a release.
 
 ## Credits
 
