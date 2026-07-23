@@ -29,7 +29,7 @@ describe('Strategy', function () {
 					info = i;
 					done();
 				})
-				.req(function (req) {
+				.request(function (req) {
 					req.headers['x-foo'] = 'hello';
 
 					req.body = {};

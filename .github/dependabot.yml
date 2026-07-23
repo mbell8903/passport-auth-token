@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # Keep runtime and development dependencies current in small, reviewable PRs.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    ignore:
+      # Chai 5 and newer are ESM-only; this project's test harness is CommonJS.
+      - dependency-name: chai
+        update-types:
+          - version-update:semver-major
+
+  # Track pinned GitHub Actions revisions separately from npm dependencies.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

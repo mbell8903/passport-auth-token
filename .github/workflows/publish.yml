@@ -1,0 +1,199 @@
+name: Test and stage npm package
+
+on:
+  # Test proposed workflow and package changes before they reach master.
+  pull_request:
+    branches: [master]
+
+  # Stage a candidate when its release tag is pushed, before publishing a
+  # GitHub Release or changing npm's `latest` distribution tag.
+  push:
+    tags:
+      - "[0-9]*"
+      - "v[0-9]*"
+
+  # Allow an existing version or commit to be staged manually.
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git tag, branch, or commit to stage
+        required: true
+        default: master
+
+# Do not allow simultaneous attempts to stage the same source reference.
+concurrency:
+  group: npm-stage-${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test on Node.js ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["18", "20", "22", "24"]
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Manual runs test the requested release source; other events test their native ref.
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Enforce code coverage
+        if: matrix.node-version == '24'
+        run: npm run coverage:check
+
+  stage:
+    needs: test
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write # Required for npm trusted publishing through OIDC.
+
+    steps:
+      - name: Select source reference
+        id: source
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_TAG: ${{ github.ref_name }}
+          MANUAL_REF: ${{ inputs.ref }}
+        run: |
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            source_ref="$PUSH_TAG"
+            is_version_tag=true
+          else
+            source_ref="$MANUAL_REF"
+
+            # Treat semver-like manual references as tags so their version is
+            # checked before npm receives the package.
+            if [[ "$MANUAL_REF" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$ ]]; then
+              is_version_tag=true
+            else
+              is_version_tag=false
+            fi
+          fi
+
+          echo "ref=$source_ref" >> "$GITHUB_OUTPUT"
+          echo "is-version-tag=$is_version_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Check out release source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.source.outputs.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      # npm staged publishing requires npm 11.15.0 or newer.
+      - name: Install supported npm version
+        run: npm install --global "npm@^11.15.0"
+
+      - name: Verify package version
+        shell: bash
+        env:
+          SOURCE_REF: ${{ steps.source.outputs.ref }}
+          IS_VERSION_TAG: ${{ steps.source.outputs.is-version-tag }}
+        run: |
+          package_version=$(node --print "require('./package.json').version")
+
+          if [[ "$IS_VERSION_TAG" == "true" ]]; then
+            tag_version="${SOURCE_REF#v}"
+            if [[ "$tag_version" != "$package_version" ]]; then
+              echo "Release tag $SOURCE_REF does not match package version $package_version." >&2
+              exit 1
+            fi
+          fi
+
+          if npm view "passport-auth-token@$package_version" version >/dev/null 2>&1; then
+            echo "passport-auth-token@$package_version already exists on npm." >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Inspect package contents
+        shell: bash
+        run: |
+          set -o pipefail
+          npm pack --dry-run --json | tee "$RUNNER_TEMP/npm-pack.json"
+
+      - name: Stage package on npm
+        id: npm-stage
+        shell: bash
+        env:
+          SOURCE_REF: ${{ steps.source.outputs.ref }}
+        run: |
+          # Preserve npm's output for review and extract the immutable stage ID
+          # that maintainers need for approval.
+          set +e
+          stage_output=$(npm stage publish --tag next 2>&1)
+          stage_status=$?
+          set -e
+          printf '%s\n' "$stage_output"
+
+          if (( stage_status != 0 )); then
+            exit "$stage_status"
+          fi
+
+          stage_id=$(
+            sed -nE 's/.*staged with id ([^)]+).*/\1/p' <<< "$stage_output" |
+              tail -n 1
+          )
+
+          if [[ -z "$stage_id" ]]; then
+            echo "npm did not return a staged-package ID." >&2
+            exit 1
+          fi
+
+          package_version=$(node --print "require('./package.json').version")
+          shasum=$(
+            node --input-type=module --eval \
+              "import fs from 'node:fs'; console.log(JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/npm-pack.json'))[0].shasum)"
+          )
+          integrity=$(
+            node --input-type=module --eval \
+              "import fs from 'node:fs'; console.log(JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/npm-pack.json'))[0].integrity)"
+          )
+
+          echo "stage-id=$stage_id" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### npm staged package"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Package | \`passport-auth-token@$package_version\` |"
+            echo "| Source | \`$SOURCE_REF\` |"
+            echo "| Stage ID | \`$stage_id\` |"
+            echo "| Distribution tag | \`next\` |"
+            echo "| SHA-1 | \`$shasum\` |"
+            echo "| Integrity | \`$integrity\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

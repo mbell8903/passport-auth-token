@@ -18,7 +18,7 @@ describe('Strategy', function () {
 					status = s;
 					done();
 				})
-				.req(function (req) {
+				.request(function (req) {
 					req.body = {};
 				})
 				.authenticate({ badRequestMessage: 'Something is wrong with this request' });

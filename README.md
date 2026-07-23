@@ -1,121 +1,134 @@
 # passport-auth-token
 
-[![Build](https://travis-ci.org/mbell8903/passport-auth-token.png)](https://travis-ci.org/mbell8903/passport-auth-token)
-[![Coverage Status](https://coveralls.io/repos/mbell8903/passport-auth-token/badge.png)](https://coveralls.io/r/mbell8903/passport-auth-token)
-[![Quality](https://codeclimate.com/github/mbell8903/passport-auth-token.png)](https://codeclimate.com/github/mbell8903/passport-auth-token)
-[![Dependencies](https://david-dm.org/mbell8903/passport-auth-token.png)](https://david-dm.org/mbell8903/passport-auth-token)
+[![Build](https://github.com/mbell8903/passport-auth-token/actions/workflows/publish.yml/badge.svg)](https://github.com/mbell8903/passport-auth-token/actions/workflows/publish.yml)
 
-
-[Passport](http://passportjs.org/) strategy for authenticating with an authentication token.
-
-This module lets you authenticate using a token in your Node.js
-applications. It is based on passport-local module by Jared Hanson.
-By plugging into Passport, token authentication can be easily and
-unobtrusively integrated into any application or framework that supports
-[Connect](http://www.senchalabs.org/connect/)-style middleware, including
-[Express](http://expressjs.com/).
+[Passport](https://www.passportjs.org/) strategy for authenticating with a
+token supplied in request headers, the request body, the query string, or
+optionally route parameters.
 
 ## Install
 
-    $ npm install passport-auth-token
+```shell
+npm install passport-auth-token
+```
 
-## Usage
+## Configure a strategy
 
-#### Configure Strategy
+The strategy requires a `verify` callback that receives the token and calls
+`done` with an error, an authenticated user, and optional authentication
+information.
 
-The token authentication strategy authenticates users using a token.
-The strategy requires a `verify` callback, which accepts these
-credentials and calls `done` providing a user.
-Here is the pseudo code.
+```js
+const passport = require('passport');
+const AuthTokenStrategy = require('passport-auth-token').Strategy;
 
-    passport.use('authtoken', new AuthTokenStrategy(
-      function(token, done) {
-        AccessToken.findOne({
-          id: token
-        }, function(error, accessToken) {
-          if (error) {
-            return done(error);
-          }
-
-          if (accessToken) {
-            if (!token.isValid(accessToken)) {
-              return done(null, false);
-            }
-
-            User.findOne({
-              id: accessToken.userId
-            }, function(error, user) {
-              if (error) {
-                return done(error);
-              }
-
-              if (!user) {
-                return done(null, false);
-              }
-
-              return done(null, user);
-            });
-          } else {
-            return done(null);
-          }
-        });
+passport.use(new AuthTokenStrategy(
+  {
+    headerFields: ['authorization'],
+    tokenFields: ['token']
+  },
+  function(token, done) {
+    AccessToken.findOne({ id: token }, function(err, accessToken) {
+      if (err) {
+        return done(err);
       }
-    ));
 
-#### Authenticate Requests
-
-Use `passport.authenticate()`, specifying the `'authtoken'` strategy, to
-authenticate requests.
-
-For example, as route middleware in an [Express](http://expressjs.com/)
-application:
-
-    app.post('/login',
-      passport.authenticate(
-        'authtoken',
-        {
-          session: false,
-          optional: false
-        }
-      ),
-      function(req, res) {
-        res.redirect('/');
+      if (!accessToken) {
+        return done(null, false);
       }
-    );
 
-You can also set the parameter `optional` to true, so the same call can be both authenticated and not authenticated.
+      return done(null, accessToken.user);
+    });
+  }
+));
+```
 
-## Configuration Options
+Set `passReqToCallback` when the verification callback also needs the request:
 
-#### `tokenFields` Array<String> ####
-An array of field names where the token is found, defaults to `[token]`
+```js
+passport.use(new AuthTokenStrategy(
+  {
+    headerFields: ['authorization'],
+    passReqToCallback: true
+  },
+  function(req, token, done) {
+    verifyTokenForRequest(req, token, done);
+  }
+));
+```
 
-#### `headerFields` Array<String> ####
-An array of field names where the token is found, defaults to `[]`
+## Authenticate requests
 
-#### `passReqToCallback` Boolean ####
-When `true`, `req` is the first argument to the verify callback (default: `false`)
+Use `passport.authenticate()` with the `authtoken` strategy:
 
-#### `params` Boolean ####
-When `true` the request params are also included in the lookup
+```js
+app.get(
+  '/protected',
+  passport.authenticate('authtoken', { session: false }),
+  function(req, res) {
+    res.json(req.user);
+  }
+);
+```
 
-#### `optional` Boolean ####
-When `true` the token is optional and the strategy does't return an error
+Request-specific lookup behavior is passed through Passport:
 
-#### `caseInsensitive` Boolean ####
-When `true` the token is check is case insensitive
+```js
+passport.authenticate('authtoken', {
+  session: false,
+  optional: true,
+  params: true
+});
+```
+
+## Options
+
+Strategy constructor options:
+
+- `tokenFields`: body, query, and optional route-parameter field names.
+  Defaults to `['token']`.
+- `headerFields`: request-header field names. Defaults to `[]`.
+- `passReqToCallback`: passes `req` before `token` to the verify callback.
+  Defaults to `false`.
+- `caseInsensitive`: enables case-insensitive field-name lookup. This is
+  explicitly opt-in and defaults to `false`. Exact matches take precedence;
+  ambiguous differently cased fields are rejected.
+
+Request-specific Passport authentication options:
+
+- `params`: also checks route parameters after headers, the body, and the query
+  string.
+- `optional`: allows verification to proceed without a token.
+- `caseInsensitive`: overrides the strategy's case-insensitive setting for the
+  current request.
+- `badRequestMessage`: changes the message returned when a required token is
+  missing.
+
+Token lookup order is:
+
+1. Headers, in configured `headerFields` order.
+2. For each configured `tokenFields` entry: the body, the query string, and
+   then route parameters when `params` is enabled.
+
+The first token found is used.
 
 ## Tests
 
-    $ npm install
-    $ npm test
+```shell
+npm install
+npm test
+npm run coverage
+```
+
+Continuous integration runs on Node.js 18, 20, 22, and 24. Node.js 24 also
+enforces 100% line and function coverage and 90% branch coverage.
 
 ## Credits
 
-  - [Mike Bell](http://github.com/mbell8903)
+- [Mike Bell](https://github.com/mbell8903)
 
 ## License
 
-[The MIT License](http://opensource.org/licenses/MIT)
+[MIT](LICENSE)
 
-Copyright (c) 2014 Mike Bell
+Copyright (c) 2014-present Mike Bell
