@@ -16,7 +16,7 @@ describe('Strategy', function () {
 					err = e;
 					done();
 				})
-				.req(function (req) {
+				.request(function (req) {
 					req.body = {};
 					req.body.token = 'abcdefghijklmnopqrstuvwxyz';
 				})
@@ -42,7 +42,7 @@ describe('Strategy', function () {
 					err = e;
 					done();
 				})
-				.req(function (req) {
+				.request(function (req) {
 					req.body = {};
 					req.body.token = 'abcdefghijklmnopqrstuvwxyz';
 				})

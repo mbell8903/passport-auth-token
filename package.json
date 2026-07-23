@@ -1,6 +1,6 @@
 {
   "name": "passport-auth-token",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "Authentication token strategy for Passport.",
   "keywords": [
     "passport",
@@ -13,36 +13,32 @@
   "author": "Mike Bell <mbell8903@yahoo.com>",
   "repository": {
     "type": "git",
-    "url": "git://github.com/mbell8903/passport-auth-token.git"
+    "url": "git+https://github.com/mbell8903/passport-auth-token.git"
   },
   "bugs": {
-    "url": "http://github.com/mbell8903/passport-auth-token/issues"
+    "url": "https://github.com/mbell8903/passport-auth-token/issues"
   },
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "http://www.opensource.org/licenses/MIT"
-    }
+  "type": "commonjs",
+  "main": "./lib/index.js",
+  "files": [
+    "lib",
+    "CHANGELOG.md"
   ],
-  "main": "./lib",
   "dependencies": {
-    "passport-strategy": "1.x.x"
+    "passport-strategy": "^1.0.0"
   },
   "devDependencies": {
-    "chai": "^4.1.2",
-    "chai-passport-strategy": "^1.0.1",
-    "mocha": "^4.0.1"
+    "chai": "^4.5.0",
+    "chai-passport-strategy": "^3.0.0"
   },
   "engines": {
     "node": ">= 6.0.0"
   },
   "scripts": {
-    "test": "mocha --reporter spec --require test/bootstrap/node test/*.test.js"
+    "test": "node --require ./test/bootstrap/node --test test/*.test.js",
+    "coverage": "node --require ./test/bootstrap/node --experimental-test-coverage --test test/*.test.js",
+    "coverage:check": "node --require ./test/bootstrap/node --experimental-test-coverage --test-coverage-include=lib/*.js --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=90 --test test/*.test.js"
   },
   "homepage": "https://github.com/mbell8903/passport-auth-token",
-  "directories": {
-    "example": "examples",
-    "test": "test"
-  },
   "license": "MIT"
 }

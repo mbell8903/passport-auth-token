@@ -26,7 +26,7 @@ describe('Strategy', function () {
 					info = i;
 					done();
 				})
-				.req(function (req) {
+				.request(function (req) {
 					req.body = {};
 					req.body.token = 'abcdefghijklmnopqrstuvwxyz';
 				})
@@ -67,7 +67,7 @@ describe('Strategy', function () {
 					info = i;
 					done();
 				})
-				.req(function (req) {
+				.request(function (req) {
 					req.query = {};
 					req.query.token = 'abcdefghijklmnopqrstuvwxyz';
 				})
@@ -125,7 +125,7 @@ describe('Strategy', function () {
 					status = s;
 					done();
 				})
-				.req(function (req) {
+				.request(function (req) {
 					req.body = {};
 				})
 				.authenticate();
@@ -153,7 +153,7 @@ describe('Strategy', function () {
 					status = s;
 					done();
 				})
-				.req(function (req) {
+				.request(function (req) {
 					req.body = {};
 				})
 				.authenticate();
