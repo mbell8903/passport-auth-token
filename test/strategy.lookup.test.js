@@ -21,7 +21,11 @@ function authenticate(strategy, request, options) {
 			})
 			.error(reject)
 			.request(function (req) {
-				Object.assign(req, request);
+				// Copy only the request containers consumed by this strategy.
+				req.headers = request.headers;
+				req.body = request.body;
+				req.query = request.query;
+				req.params = request.params;
 			})
 			.authenticate(options);
 	});
