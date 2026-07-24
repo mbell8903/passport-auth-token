@@ -125,7 +125,7 @@ jobs:
 
       # npm staged publishing requires npm 11.15.0 or newer.
       - name: Install supported npm version
-        run: npm install --global "npm@^11.15.0"
+        run: npm install --global "npm@11.15.0"
 
       - name: Verify package version
         shell: bash

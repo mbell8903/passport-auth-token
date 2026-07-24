@@ -13,6 +13,21 @@ describe('lookup', function () {
 		expect(value).to.equal('nested-token');
 	});
 
+	it('does not look up inherited fields', function () {
+		const value = lookup(Object.create({
+			token: 'inherited-token'
+		}), 'token');
+
+		expect(value).to.equal(null);
+	});
+
+	it('looks up own fields on objects without a prototype', function () {
+		const object = Object.create(null);
+		object.token = 'own-token';
+
+		expect(lookup(object, 'token')).to.equal('own-token');
+	});
+
 	it('matches every nested segment case-insensitively when enabled', function () {
 		const value = lookup({
 			User: {

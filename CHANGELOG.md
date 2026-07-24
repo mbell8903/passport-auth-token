@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.4 - 2026-07-24
+
+### Changed
+
+- Pinned the npm CLI used for staged publishing for reproducible releases.
+
+### Security
+
+- Restricted token lookup to an object's own properties so inherited request
+  container values cannot be treated as authentication credentials.
+- Added strategy-level and helper-level regression coverage for inherited
+  fields while preserving support for null-prototype request objects.
+
 ## 2.0.3 - 2026-07-23
 
 ### Added
