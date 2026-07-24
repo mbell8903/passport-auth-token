@@ -47,6 +47,37 @@ describe('Strategy token lookup', function () {
 		expect(outcome.status).to.equal(400);
 	});
 
+	it('does not authenticate with an inherited token field', async function () {
+		const strategy = new Strategy(function (token, done) {
+			done(null, { token: token });
+		});
+		const body = Object.create({
+			token: 'inherited-token'
+		});
+
+		const outcome = await authenticate(strategy, {
+			body: body
+		});
+
+		expect(outcome.type).to.equal('fail');
+		expect(outcome.status).to.equal(400);
+	});
+
+	it('authenticates with an own token field on an object without a prototype', async function () {
+		const strategy = new Strategy(function (token, done) {
+			done(null, { token: token });
+		});
+		const body = Object.create(null);
+		body.token = 'own-token';
+
+		const outcome = await authenticate(strategy, {
+			body: body
+		});
+
+		expect(outcome.type).to.equal('success');
+		expect(outcome.user.token).to.equal('own-token');
+	});
+
 	it('supports explicitly configured case-insensitive lookup', async function () {
 		const strategy = new Strategy({
 			headerFields: ['Authorization'],
